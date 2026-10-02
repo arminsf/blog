@@ -1,0 +1,1 @@
+add_demo(mercator SOURCES mercator.cpp HOST opengl_host)

@@ -1,0 +1,14 @@
+{{- $name := .Get 0 -}}
+{{- $w := .Get 1 | default 640 -}}
+{{- $h := .Get 2 | default 360 -}}
+{{- $id := printf "demo-%s-%d" $name .Ordinal -}}
+{{- if not (.Page.Store.Get "demo-loader") -}}
+  {{- .Page.Store.Set "demo-loader" true -}}
+  <script type="module" src="{{ "js/demo-loader.js" | relURL }}"></script>
+  {{- end -}}
+  <figure class="demo"
+  data-demo-js="{{ printf "demos/%s/%s.js" $name $name | relURL }}"
+  data-canvas-id="{{ $id }}">
+  <button type="button" class="demo-start">Run {{ $name }}</button>
+  <canvas id="{{ $id }}" width="{{ $w }}" height="{{ $h }}" tabindex="0"></canvas>
+</figure>

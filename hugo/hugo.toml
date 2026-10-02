@@ -1,0 +1,23 @@
+baseURL = 'https://arminsf.github.io/blog'
+locale = 'en-us'
+title = "Armin's blog"
+theme = 'hugo-theme-monochrome'
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.extensions]
+      [markup.goldmark.extensions.passthrough]
+        enable = true
+        [markup.goldmark.extensions.passthrough.delimiters]
+          block = [['\[', '\]'], ['$$', '$$']]
+          inline = [['\(', '\)']]
+
+[params]
+navbar_title = "Armin's blog"
+toc_position = 'right'
+math = true
+enable_math = true
+enable_site_search = true
+
+[outputs]
+home = ["HTML", "RSS", "JSON"]

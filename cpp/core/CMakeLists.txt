@@ -1,0 +1,2 @@
+add_library(demo_core INTERFACE)
+target_include_directories(demo_core INTERFACE include)
