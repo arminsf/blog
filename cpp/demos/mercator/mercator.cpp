@@ -18,6 +18,21 @@ demo::Vec3 spherical_to_3d(const demo::Vec2& s, float radius) {
     };
 }
 
+demo::Vec2 spherical_from_3d(const demo::Vec3& p) {
+    float horiz_dist = std::sqrt(p.x * p.x + p.z * p.z);
+    return {
+        std::atan2(p.x, p.z),
+        std::atan2(-p.y, horiz_dist)
+    };
+}
+
+demo::Vec2 spherical_to_mercator(const demo::Vec2& s, float r) {
+    return {
+        r * s.x,
+        -r * logf(tanf(.25f * PI + .5f * s.y))
+    };
+}
+
 // 3x3 rotation matrix, row-major: p' = R * p
 struct Mat3 {
     float m[3][3];
@@ -333,6 +348,7 @@ private:
     
     void draw_globe(demo::Canvas& canvas, bool seethrough) {
         canvas.stroke({ 80, 80, 100, 255 });
+        canvas.fill({180, 180, 200, 255});
         if (!seethrough)
             canvas.circle({globe_center.x, globe_center.y}, globe_radius);
 
@@ -361,16 +377,55 @@ private:
         canvas.polyline(coords);
     }
 
+    void draw_mercator(demo::Canvas& canvas, demo::Vec2 topleft, float r) {
+        std::vector<demo::Vec2> coords;
+        for (demo::Line3& l : sphere_tr) {
+            demo::Vec2 s_a = spherical_from_3d(l.a - globe_center);
+            demo::Vec2 s_b = spherical_from_3d(l.b - globe_center);
+
+            demo::Vec2 a = spherical_to_mercator(s_a, r);
+            demo::Vec2 b = spherical_to_mercator(s_b, r);
+
+            if (fabs(a.x - b.x) > r)
+                continue;
+
+            coords.push_back(topleft + a);
+            coords.push_back(topleft + b);
+        }
+
+        canvas.stroke({ 150, 150, 160, 255 });
+        canvas.polyline(coords);
+
+        coords.clear();
+
+        for (demo::Line3& l : countries_tr) {
+            demo::Vec2 s_a = spherical_from_3d(l.a - globe_center);
+            demo::Vec2 s_b = spherical_from_3d(l.b - globe_center);
+
+            demo::Vec2 a = spherical_to_mercator(s_a, r);
+            demo::Vec2 b = spherical_to_mercator(s_b, r);
+
+            if (fabs(a.x - b.x) > r)
+                continue;
+
+            coords.push_back(topleft + a);
+            coords.push_back(topleft + b);
+        }
+
+        canvas.stroke({ 0, 0, 0, 255 });
+        canvas.polyline(coords);        
+    }
+
 public:
     const char* title() const override { return "Earth demo"; };
-    demo::Vec2 preferred_size() const override { return {600, 600}; }
+    demo::Vec2 preferred_size() const override { return {820, 400}; }
 
     MercatorDemo() {
-        create_sphere_lines(250.0, 13, 13, 100);
+        create_sphere_lines(preferred_size().y * 0.45f, 13, 13, 100);
         create_country_lines();
-        translate_globe({preferred_size().x / 2, preferred_size().y / 2, 0.0});
+        translate_globe({preferred_size().y / 2, preferred_size().y / 2, 0.0});
 
-        rotate_orientation_screen({1, 0, 0}, -0.4f); // starting tilt: north pole leans toward the viewer
+        // rotate_orientation_screen({1, 0, 0}, -0.4f); // starting tilt: north pole leans toward the viewer
         unrotate_globe();
         rotate_globe(orientation);
     }
@@ -378,8 +433,10 @@ public:
     void update(float dt, const demo::InputData& input) override {
         const bool dragging = drag_globe(input);
 
-        if (!dragging) // don't fight the user while they hold the globe
-            spin_orientation(spin_speed * dt);
+        if (!dragging) { // don't fight the user while they hold the globe
+            // spin_orientation(spin_speed * dt);
+            rotate_orientation_screen({0.0, 1.0, 0.0}, spin_speed * dt);
+        }
 
         mat3_orthonormalize(orientation);
 
@@ -388,10 +445,10 @@ public:
     }
 
     void draw(demo::Canvas& canvas) override {
-        canvas.fill({ 80, 80, 100, 255 });
-        canvas.clear();
         canvas.fill({180, 180, 200, 255});
+        canvas.clear();
         draw_globe(canvas, false);
+        draw_mercator(canvas, {preferred_size().x * .75f, preferred_size().y * .5f}, preferred_size().y * 0.55f / PI);
     }
 };
 
